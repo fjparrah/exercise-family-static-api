@@ -1,8 +1,20 @@
+import os
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from datastructures import Family
+from utils import APIException, generate_sitemap
 
 app = Flask(__name__)
 jackson_family = Family('Jackson')
+CORS(app)
+
+@app.errorhandler(APIException)
+def handle_invalid_usage(error):
+    return jsonify(error.to_dict()), error.status_code
+
+app.route('/')
+def sitemap():
+    return generate_sitemap(app)
 
 @app.route('/members', methods=['GET'])
 def get_members():
@@ -23,7 +35,7 @@ def add_member():
         jackson_family.add_member(member_data)
         return jsonify({}), 200
     else:
-        return jsonify({"error": "Campos requeridos faltantes"}), 400
+        return jsonify({"error": "Missing required fields"}), 400
 
 @app.route('/member/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
@@ -33,5 +45,6 @@ def delete_member(member_id):
         return jsonify({"error": "Miembro no encontrado"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    PORT = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=PORT, debug=True)
 
